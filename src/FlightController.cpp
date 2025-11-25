@@ -1,6 +1,7 @@
 #include "FlightController.h"
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 
 namespace avionics {
 
@@ -25,7 +26,7 @@ void FlightController::update(double altitude, double airspeed, double verticalS
     // State machine logic for flight phase transitions
     switch (currentPhase_) {
         case FlightPhase::PREFLIGHT:
-            if (airspeed > 5.0 && throttle > 0.5) {
+            if (airspeed > 5.0 && controls_.throttle > 0.5) {
                 transitionToPhase(FlightPhase::TAKEOFF);
             }
             break;
@@ -42,7 +43,7 @@ void FlightController::update(double altitude, double airspeed, double verticalS
             }
             break;
 
-        case FlightPhase::CRUISE:
+        case FlightPhase::CRUISE: {
             // Check for descent initiation (simulated after some time)
             auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
                 std::chrono::steady_clock::now() - phaseStartTime_).count();
@@ -50,6 +51,7 @@ void FlightController::update(double altitude, double airspeed, double verticalS
                 transitionToPhase(FlightPhase::DESCENT);
             }
             break;
+        }
 
         case FlightPhase::DESCENT:
             if (altitude < 500.0 && airspeed < 80.0) {
@@ -90,7 +92,7 @@ void FlightController::transitionToPhase(FlightPhase newPhase) {
     }
 }
 
-void FlightController::updateControlSurfaces(double altitude, double airspeed, double verticalSpeed) {
+void FlightController::updateControlSurfaces(double /*altitude*/, double /*airspeed*/, double /*verticalSpeed*/) {
     // Simplified control surface logic based on flight phase
     switch (currentPhase_) {
         case FlightPhase::PREFLIGHT:
@@ -135,10 +137,10 @@ void FlightController::updateControlSurfaces(double altitude, double airspeed, d
     }
 
     // Clamp control values to safe ranges
-    controls_.elevator = std::clamp(controls_.elevator, -1.0, 1.0);
-    controls_.aileron = std::clamp(controls_.aileron, -1.0, 1.0);
-    controls_.rudder = std::clamp(controls_.rudder, -1.0, 1.0);
-    controls_.throttle = std::clamp(controls_.throttle, 0.0, 1.0);
+    controls_.elevator = std::max(-1.0, std::min(controls_.elevator, 1.0));
+    controls_.aileron = std::max(-1.0, std::min(controls_.aileron, 1.0));
+    controls_.rudder = std::max(-1.0, std::min(controls_.rudder, 1.0));
+    controls_.throttle = std::max(0.0, std::min(controls_.throttle, 1.0));
 }
 
 void FlightController::triggerEmergency(const std::string& reason) {
