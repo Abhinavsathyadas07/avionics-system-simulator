@@ -26,8 +26,9 @@ public:
      * @brief Run simulation loop
      * @param duration Simulation duration in seconds
      * @param updateRate Update rate in Hz
+     * @param injectTestFault Inject an airspeed fault at 100 s and clear it at 105 s
      */
-    void run(double duration, double updateRate = 10.0);
+    void run(double duration, double updateRate = 10.0, bool injectTestFault = false);
 
     /**
      * @brief Shutdown system gracefully

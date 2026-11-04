@@ -88,6 +88,16 @@ private:
     bool isInRange(double value, double min, double max) const;
 
     /**
+     * @brief True if the component already has an unresolved fault
+     */
+    bool hasActiveFault(const std::string& component) const;
+
+    /**
+     * @brief Mark every unresolved fault for a component as resolved
+     */
+    void resolveFaults(const std::string& component);
+
+    /**
      * @brief Get severity string
      */
     static std::string getSeverityString(FaultSeverity severity);

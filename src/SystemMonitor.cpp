@@ -34,7 +34,7 @@ bool SystemMonitor::initialize() {
     return true;
 }
 
-void SystemMonitor::run(double duration, double updateRate) {
+void SystemMonitor::run(double duration, double updateRate, bool injectTestFault) {
     std::cout << "[SystemMonitor] Starting simulation..." << std::endl;
     std::cout << "Duration: " << duration << " seconds" << std::endl;
     std::cout << "Update rate: " << updateRate << " Hz\n" << std::endl;
@@ -49,7 +49,7 @@ void SystemMonitor::run(double duration, double updateRate) {
         SensorData sensors = sensorProcessor_.processSensors(simulationTime_);
         
         // Update flight controller
-        flightController_.update(sensors.altitude, sensors.airspeed, sensors.verticalSpeed);
+        flightController_.update(simulationTime_, sensors.altitude, sensors.airspeed, sensors.verticalSpeed);
         
         FlightPhase currentPhase = flightController_.getCurrentPhase();
         ControlSurfaces controls = flightController_.getControlSurfaces();
@@ -75,14 +75,14 @@ void SystemMonitor::run(double duration, double updateRate) {
             printStatus(sensors, currentPhase, controls, activeFaults);
         }
         
-        // Simulate fault injection at specific times (for testing)
-        if (std::abs(simulationTime_ - 100.0) < dt) {
+        // Optional built-in test: inject a sensor fault at specific times
+        if (injectTestFault && std::abs(simulationTime_ - 100.0) < dt / 2) {
             std::cout << "\n[SystemMonitor] Injecting sensor fault for testing..." << std::endl;
             sensorProcessor_.injectFault(false, true, false);  // Airspeed fault
             logger_.logEvent("Test fault injected: Airspeed sensor");
         }
         
-        if (std::abs(simulationTime_ - 105.0) < dt) {
+        if (injectTestFault && std::abs(simulationTime_ - 105.0) < dt / 2) {
             std::cout << "[SystemMonitor] Clearing sensor fault...\n" << std::endl;
             sensorProcessor_.injectFault(false, false, false);
             logger_.logEvent("Test fault cleared");

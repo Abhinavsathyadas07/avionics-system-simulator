@@ -56,25 +56,38 @@ make
 ### Running the Simulator
 
 ```bash
-./build/avionics_simulator
+./build/avionics_simulator [duration_seconds] [update_rate_hz] [--inject-fault]
+```
+
+- `duration_seconds`: default 450, long enough for the scripted flight to land (about 425 s)
+- `update_rate_hz`: 1 to 100, default 10
+- `--inject-fault`: optional built-in test that injects an airspeed-sensor fault at 100 s and clears it at 105 s
+
+The simulation runs in real time. A normal run passes through PREFLIGHT → TAKEOFF → CLIMB → CRUISE → DESCENT → APPROACH → LANDING. If a critical fault occurs, the controller switches to EMERGENCY and stays there for the rest of the run, by design.
+
+### Running the Tests
+
+```bash
+cmake -S . -B build && cmake --build build
+ctest --test-dir build --output-on-failure
 ```
 
 ### Visualizing Telemetry Data
 
 ```bash
-python python/visualize_telemetry.py logs/flight_data.csv
+python python/visualize_telemetry.py logs/flight_data_<timestamp>.csv
 ```
 
 ## Development Roadmap
 
 - [x] Project structure setup
-- [ ] Flight control state machine implementation
-- [ ] Sensor data processing module
-- [ ] Real-time monitoring system
-- [ ] Fault detection and handling
-- [ ] Telemetry logging system
-- [ ] Python visualization tools
-- [ ] Unit tests
+- [x] Flight control state machine implementation
+- [x] Sensor data processing module
+- [x] Real-time monitoring system
+- [x] Fault detection and handling
+- [x] Telemetry logging system
+- [x] Python visualization tools
+- [x] Unit tests
 - [ ] Documentation
 
 ## License
