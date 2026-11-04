@@ -1,5 +1,6 @@
 #include <iostream>
 #include <csignal>
+#include <string>
 #include "SystemMonitor.h"
 
 using namespace avionics;
@@ -21,8 +22,9 @@ int main(int argc, char* argv[]) {
     std::signal(SIGTERM, signalHandler);
     
     // Parse command line arguments
-    double simulationDuration = 240.0;  // Default 4 minutes
+    double simulationDuration = 450.0;  // Default 7.5 minutes: the scripted flight lands at about 425 s
     double updateRate = 10.0;            // Default 10 Hz
+    bool injectTestFault = false;        // Pass --inject-fault as the third argument
     
     if (argc > 1) {
         try {
@@ -46,6 +48,10 @@ int main(int argc, char* argv[]) {
                       << updateRate << " Hz" << std::endl;
         }
     }
+
+    if (argc > 3 && std::string(argv[3]) == "--inject-fault") {
+        injectTestFault = true;
+    }
     
     // Create and initialize system monitor
     SystemMonitor systemMonitor;
@@ -58,7 +64,7 @@ int main(int argc, char* argv[]) {
     
     // Run simulation
     try {
-        systemMonitor.run(simulationDuration, updateRate);
+        systemMonitor.run(simulationDuration, updateRate, injectTestFault);
     } catch (const std::exception& e) {
         std::cerr << "\nSimulation error: " << e.what() << std::endl;
         systemMonitor.shutdown();

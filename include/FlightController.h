@@ -2,7 +2,6 @@
 #define FLIGHT_CONTROLLER_H
 
 #include <string>
-#include <chrono>
 
 namespace avionics {
 
@@ -45,11 +44,12 @@ public:
 
     /**
      * @brief Update the flight phase based on current conditions
+     * @param simTime Simulation time in seconds
      * @param altitude Current altitude in meters
      * @param airspeed Current airspeed in m/s
      * @param verticalSpeed Vertical speed in m/s
      */
-    void update(double altitude, double airspeed, double verticalSpeed);
+    void update(double simTime, double altitude, double airspeed, double verticalSpeed);
 
     /**
      * @brief Get current flight phase
@@ -75,7 +75,8 @@ private:
     FlightPhase currentPhase_;
     FlightPhase previousPhase_;
     ControlSurfaces controls_;
-    std::chrono::steady_clock::time_point phaseStartTime_;
+    double phaseStartTime_;  // Simulation time (s) when the current phase began
+    double lastUpdateTime_;  // Simulation time (s) of the most recent update
 
     /**
      * @brief Transition to a new flight phase

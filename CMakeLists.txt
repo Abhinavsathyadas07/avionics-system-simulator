@@ -32,5 +32,10 @@ add_executable(avionics_simulator ${SOURCES})
 # Enable testing
 enable_testing()
 
-# Test executable (to be added later)
-# add_subdirectory(tests)
+# Unit tests: run with `ctest --test-dir build` after building
+add_executable(avionics_tests
+    tests/test_main.cpp
+    src/FlightController.cpp
+    src/FaultHandler.cpp
+)
+add_test(NAME avionics_tests COMMAND avionics_tests)

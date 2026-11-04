@@ -20,6 +20,11 @@ void FaultHandler::initialize() {
 
 void FaultHandler::reportFault(FaultSeverity severity, const std::string& component, 
                                const std::string& description) {
+    // One record per incident: while a component's fault is active, don't add it again.
+    if (hasActiveFault(component)) {
+        return;
+    }
+
     FaultRecord fault;
     fault.timestamp = std::chrono::system_clock::now();
     fault.severity = severity;
@@ -49,23 +54,30 @@ void FaultHandler::checkSensorHealth(double altitude, double airspeed,
                    "Sensor fault detected - invalid data");
         return;
     }
+    resolveFaults("SensorProcessor");
     
     // Check altitude range
     if (!isInRange(altitude, -500.0, 15000.0)) {
         reportFault(FaultSeverity::WARNING, "AltitudeSensor", 
                    "Altitude reading out of expected range");
+    } else {
+        resolveFaults("AltitudeSensor");
     }
     
     // Check airspeed range
     if (!isInRange(airspeed, 0.0, 300.0)) {
         reportFault(FaultSeverity::WARNING, "AirspeedSensor", 
                    "Airspeed reading out of expected range");
+    } else {
+        resolveFaults("AirspeedSensor");
     }
     
     // Check pressure range
     if (!isInRange(pressure, 100.0, 1100.0)) {
         reportFault(FaultSeverity::WARNING, "PressureSensor", 
                    "Pressure reading out of expected range");
+    } else {
+        resolveFaults("PressureSensor");
     }
     
     // Check for dangerous conditions
@@ -107,8 +119,26 @@ std::vector<FaultRecord> FaultHandler::getActiveFaults() const {
 }
 
 bool FaultHandler::isSystemSafe() const {
-    // System is safe if there are no critical or fatal faults
-    return criticalFaultCount_ == 0;
+    // Safe when no critical or fatal fault is still active. (criticalFaultCount_
+    // stays as a running total for reporting.)
+    return std::none_of(faults_.begin(), faults_.end(), [](const FaultRecord& fault) {
+        return !fault.resolved &&
+               (fault.severity == FaultSeverity::CRITICAL || fault.severity == FaultSeverity::FATAL);
+    });
+}
+
+bool FaultHandler::hasActiveFault(const std::string& component) const {
+    return std::any_of(faults_.begin(), faults_.end(), [&component](const FaultRecord& fault) {
+        return !fault.resolved && fault.component == component;
+    });
+}
+
+void FaultHandler::resolveFaults(const std::string& component) {
+    for (auto& fault : faults_) {
+        if (!fault.resolved && fault.component == component) {
+            fault.resolved = true;
+        }
+    }
 }
 
 int FaultHandler::getFaultCount(FaultSeverity severity) const {

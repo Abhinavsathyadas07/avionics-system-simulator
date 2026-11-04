@@ -8,7 +8,8 @@ namespace avionics {
 FlightController::FlightController() 
     : currentPhase_(FlightPhase::PREFLIGHT),
       previousPhase_(FlightPhase::PREFLIGHT),
-      phaseStartTime_(std::chrono::steady_clock::now()) {
+      phaseStartTime_(0.0),
+      lastUpdateTime_(0.0) {
     controls_.elevator = 0.0;
     controls_.aileron = 0.0;
     controls_.rudder = 0.0;
@@ -18,15 +19,20 @@ FlightController::FlightController()
 void FlightController::initialize() {
     std::cout << "[FlightController] Initializing flight control system..." << std::endl;
     currentPhase_ = FlightPhase::PREFLIGHT;
-    phaseStartTime_ = std::chrono::steady_clock::now();
+    phaseStartTime_ = 0.0;
+    lastUpdateTime_ = 0.0;
     controls_ = {0.0, 0.0, 0.0, 0.0};
 }
 
-void FlightController::update(double altitude, double airspeed, double verticalSpeed) {
+void FlightController::update(double simTime, double altitude, double airspeed, double verticalSpeed) {
+    lastUpdateTime_ = simTime;
+
     // State machine logic for flight phase transitions
     switch (currentPhase_) {
         case FlightPhase::PREFLIGHT:
-            if (airspeed > 5.0 && controls_.throttle > 0.5) {
+            // Throttle is this controller's output (0% in PREFLIGHT), so it can't
+            // also be the exit condition. A takeoff roll shows up as airspeed.
+            if (airspeed > 5.0) {
                 transitionToPhase(FlightPhase::TAKEOFF);
             }
             break;
@@ -44,10 +50,9 @@ void FlightController::update(double altitude, double airspeed, double verticalS
             break;
 
         case FlightPhase::CRUISE: {
-            // Check for descent initiation (simulated after some time)
-            auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::steady_clock::now() - phaseStartTime_).count();
-            if (elapsed > 60 && verticalSpeed < -1.0) {
+            // Check for descent initiation after at least 60 s of cruise (simulation time)
+            double elapsed = simTime - phaseStartTime_;
+            if (elapsed > 60.0 && verticalSpeed < -1.0) {
                 transitionToPhase(FlightPhase::DESCENT);
             }
             break;
@@ -84,7 +89,7 @@ void FlightController::transitionToPhase(FlightPhase newPhase) {
     if (newPhase != currentPhase_) {
         previousPhase_ = currentPhase_;
         currentPhase_ = newPhase;
-        phaseStartTime_ = std::chrono::steady_clock::now();
+        phaseStartTime_ = lastUpdateTime_;
         
         std::cout << "[FlightController] Phase transition: " 
                   << getPhaseString(previousPhase_) << " -> " 
@@ -147,7 +152,7 @@ void FlightController::triggerEmergency(const std::string& reason) {
     std::cout << "[FlightController] EMERGENCY TRIGGERED: " << reason << std::endl;
     previousPhase_ = currentPhase_;
     currentPhase_ = FlightPhase::EMERGENCY;
-    phaseStartTime_ = std::chrono::steady_clock::now();
+    phaseStartTime_ = lastUpdateTime_;
 }
 
 std::string FlightController::getPhaseString(FlightPhase phase) {
